@@ -170,9 +170,13 @@ class ProParkur {
     }
 
     rebuildWorld() {
+        // Hedefleri temizle
         this.targets.forEach(t => this.scene.remove(t));
         this.targets = [];
-        this.scene.children.forEach(c => { if(ca.name === 'fire_obj') this.scene.remove(c); });
+        
+        // Ateş nesnelerini isme göre temizle (Önce bir diziye toplayıp sonra silmek daha güvenli)
+        const fireObjs = this.scene.children.filter(c => c.name === 'fire_obj');
+        fireObjs.forEach(c => this.scene.remove(c));
 
         this.mapData.forEach(obj => {
             if(obj.type === 'yukari') this.addWall(obj);
@@ -323,7 +327,6 @@ class ProParkur {
             this.rebuildWorld();
         };
         window.removeObj = (id) => {
-            if(this.transformControls.object?.userData?.id === id) this.transformControls.detach();
             this.mapData = this.mapData.filter(o => o.id !== id);
             this.rebuildWorld();
         };
