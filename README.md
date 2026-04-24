@@ -85,3 +85,5 @@ Sistem, batarya seviyesi %10'un altına düştüğünde veya tehlike (yangın) t
 
 > [!TIP]
 > Daha iyi AI performansı için simülatördeki "FPV" kamerasının temiz bir görüşe sahip olduğundan emin olun. Parkuru düzenlerken işaretlerin dronun rotası üzerinde dik durmasına dikkat edin.
+
+Co-authored-by:  <usakpinarfurkan155@gmail.com>
