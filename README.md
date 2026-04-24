@@ -5,96 +5,114 @@
   <img src="https://img.shields.io/badge/Three.js-000000?style=for-the-badge&logo=three.dot-js&logoColor=white" />
   <img src="https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white" />
   <img src="https://img.shields.io/badge/YOLOv8-00FFFF?style=for-the-badge&logo=ultralytics&logoColor=black" />
+  <br />
+  <img src="https://img.shields.io/github/license/Leansxd/tello-web?style=flat-square" />
+  <img src="https://img.shields.io/github/stars/Leansxd/tello-web?style=flat-square" />
 </div>
 
 ---
 
-### 🌐 Overview
-**Tello-Web** is a high-performance, Three.js-based 3D simulation environment and autonomous flight control system integrated with **YOLOv8**. Designed for DJI Tello drones, it bridges the gap between virtual testing and real-world autonomous missions.
+### 🌐 Genel Bakış
+**Tello-Web**, DJI Tello dronları için geliştirilmiş, yüksek performanslı bir **Three.js** tabanlı 3D simülasyon ortamı ve **YOLOv8** entegreli otonom uçuş kontrol sistemidir. Sanal test ortamı ile gerçek dünya otonom görevleri arasında kusursuz bir köprü kurar.
 
 ---
 
-## ✨ Key Features
+## 📸 Görsel Galeri (Visual Showcase)
 
-- **🕹️ Professional Parkour Simulator:** Physics-based 3D simulation with fluid graphics powered by Three.js.
-
-![Tello Drone](public/tello3d.png)
-
-- **🧠 YOLOv8 Autonomous Navigation:** Real-time AI detection of directional signs (Up, Down, Left, Right) and fire/smoke hazards.
-- **🛠️ Mission Editor:** Create custom parkour courses using drag-and-drop. Save and load maps via LocalStorage.
-- **🎥 FPV Video Streaming:** Live 30 FPS camera feed from the drone to the Python backend via WebSockets.
-
-![Tello Drone](public/tellopy.png)
-
-- **🌉 Tello Bridge:** A robust communication layer compatible with the `djitellopy` API, connecting Web and Python ecosystems.
+<div align="center">
+  <table style="width: 100%; border-collapse: collapse; border: none;">
+    <tr>
+      <td align="center" style="border: none; padding: 10px;">
+        <b>🕹️ Profesyonel Simülatör Arayüzü</b><br>
+        <img src="public/tello3d.png" width="100%" style="border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.5);" />
+      </td>
+      <td align="center" style="border: none; padding: 10px;">
+        <b>🧠 AI Görü İşleme (YOLOv8)</b><br>
+        <img src="public/tellopy.png" width="100%" style="border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.5);" />
+      </td>
+    </tr>
+  </table>
+</div>
 
 ---
 
-## 🚀 Getting Started
+## ✨ Temel Özellikler
 
-### 1. Launch the Web Simulator
-Initialize the frontend development environment:
+### 🎮 Simülasyon ve Kontrol
+- **🕹️ Gelişmiş Parkur Simülatörü:** Three.js ile güçlendirilmiş, fizik tabanlı ve akıcı 3D grafikler.
+- **🛠️ Görev Düzenleyici (Mission Editor):** Sürükle-bırak ile kendi parkurlarınızı oluşturun, haritaları **LocalStorage** ile kaydedin.
+- **🌉 Tello Bridge:** `djitellopy` API'si ile tam uyumlu, Web ve Python dünyasını birleştiren iletişim katmanı.
+
+### 🧠 Otonom Zeka
+- **🧠 YOLOv8 Navigasyon:** Yön tabelalarını (Yukarı, Aşağı, Sol, Sağ) ve tehlikeleri (Ateş, Duman) gerçek zamanlı tespit eder.
+- **🎥 FPV Canlı Yayın:** Simülatörden Python tarafına WebSockets üzerinden **30 FPS** kesintisiz görüntü aktarımı.
+- **🛰️ Otonom Görev Mantığı:** Tespit edilen verilere göre dronun rotasını otonom olarak belirleme yeteneği.
+
+---
+
+## 🚀 Başlangıç Kılavuzu
+
+### 1. Web Simülatörünü Başlatın
+Frontend bağımlılıklarını kurun ve geliştirme sunucusunu çalıştırın:
 ```bash
-# Install dependencies
+# Bağımlılıkları yükle
 npm install
 
-# Run the development server
+# Geliştirme sunucusunu başlat
 npm run dev
 ```
-Open [http://localhost:5173](http://localhost:5173) in your browser.
+Tarayıcınızda [http://localhost:5173](http://localhost:5173) adresini açın.
 
-### 2. Prepare the AI Backend
-Install the required Python packages:
+### 2. Python AI Arka Planını Hazırlayın
+Gerekli Python paketlerini yükleyin:
 ```bash
 pip install ultralytics opencv-python websockets numpy
 ```
 
-### 3. Initiate Autonomous Flight
-Ensure the Web UI is running (Bridge connection established), then execute:
+### 3. Otonom Uçuşu Başlatın
+Web arayüzü çalışırken (Bridge bağlantısı kurulduğunda) şu komutu çalıştırın:
 ```bash
 python sim_test.py
 ```
 
 ---
 
-## 🎮 Control Guide
+## 🎮 Kontrol Rehberi
 
-### Simulator Camera
-| Key | Action |
+### Simülatör Kamerası
+| Tuş | Eylem |
 | :--- | :--- |
-| **Left Click + Drag** | Rotate Camera |
-| **W / A / S / D** | Movement (Noclip) |
-| **Q / E** | Altitude (Up / Down) |
+| **Sol Tık + Sürükle** | Kamerayı Döndür |
+| **W / A / S / D** | Hareket (Serbest Bakış) |
+| **Q / E** | Yükseklik (Yukarı / Aşağı) |
 
-### Course Editor
-- **Click on Object:** Select and enter drag mode.
-- **Left Panel:** Add new elements (Walls, Directional Signs, Hazards).
-- **DELETE:** Remove selected object.
-- **SAVE:** Persist the parkour layout.
-
-### Autonomous Mode (`sim_test.py`)
-- **T:** Takeoff
-- **L:** Land
-- **Q:** Terminate Program
+### Otonom Mod (`sim_test.py`)
+- **T:** Kalkış (Takeoff)
+- **L:** İniş (Land)
+- **Q:** Programı Kapat
 
 ---
 
-## 🏗️ Technology Stack
+## 🏗️ Teknoloji Yığını
 
 - **Frontend:** [Vite](https://vitejs.dev/), [Three.js](https://threejs.org/), Vanilla CSS
 - **Backend / AI:** Python 3.10+, [Ultralytics YOLOv8](https://ultralytics.com/), OpenCV, WebSockets
-- **Models:** YOLOv8 Nano (`best.pt` for signs, `fire.pt` for hazard detection)
+- **Modeller:** YOLOv8 Nano (`best.pt` tabelalar için, `fire.pt` tehlike tespiti için)
 
 ---
 
-## 🛡️ Safety & Failsafe
-The system is equipped with an automated failsafe mechanism. The drone will automatically land if:
-- Battery level drops below **10%**.
-- A critical hazard (fire) is detected within close proximity.
+## 🛡️ Güvenlik ve Hata Önleme
+Sistem otomatik bir güvenlik mekanizması ile donatılmıştır. Drone şu durumlarda otomatik iniş yapar:
+- Pil seviyesi **%10**'un altına düştüğünde.
+- Çok yakın bir mesafede kritik bir tehlike (yangın) tespit edildiğinde.
 
 ---
 
 > [!TIP]
-> For optimal AI performance, ensure the **FPV camera** in the simulator has a clear line of sight. Align directional signs vertically along the drone's intended path for better detection accuracy.
+> **AI Performans Notu:** En iyi tespit sonuçları için simülatördeki kameranın tabelaları net gördüğünden emin olun. Tabelaları dronun rotasına dikey olarak yerleştirmeniz önerilir.
 
 ---
+
+<div align="center">
+  <sub>Drone Tutkunları ve Yapay Zeka Araştırmacıları için ❤️ ile geliştirildi.</sub>
+</div>
