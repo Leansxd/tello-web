@@ -15,26 +15,41 @@
 ---
 
 ## 🌐 Overview
-**Tello-Web** is a comprehensive simulation platform designed to bridge the gap between virtual development and real-world DJI Tello drone missions. By utilizing **Three.js** for a physics-accurate 3D environment and **YOLOv8** for real-time computer vision, it provides a robust testing ground for autonomous flight algorithms without the risk of physical damage.
+**Tello-Web** is a comprehensive simulation platform designed to bridge the gap between virtual development and real-world DJI Tello drone missions. By utilizing **Three.js** for a physics-accurate 3D environment and **YOLOv8** for real-time computer vision, it provides a robust testing ground for autonomous flight algorithms.
 
 ---
 
 ## 🏗️ Core Components
 
 ### 1. 🕹️ 3D Simulator (The Environment)
-Built with **Vite** and **Three.js**, the simulator provides a realistic physics environment. It handles:
-- **Drone Dynamics:** Accurate flight physics including inertia, drag, and gravity.
-- **FPV Camera:** A virtual 720p camera mounted on the drone that streams live frames to the AI module.
-- **Collision System:** Real-time detection of walls, obstacles, and hazards.
+Built with **Vite** and **Three.js**, the simulator handles accurate flight physics, 720p virtual FPV camera streaming, and a real-time collision system for obstacles and hazards.
 
 ### 2. 🧠 Intelligence Layer (The Brain)
-The Python-based backend serves as the drone's brain:
-- **Object Detection:** Powered by **YOLOv8 Nano**, trained specifically to detect directional signs (Up, Down, Left, Right, Forward) and hazards (Fire, Smoke).
-- **Control Loop:** Processes FPV frames, analyzes detection results, and calculates the next movement vector.
-- **Failsafe System:** Monitors flight telemetry to prevent crashes or respond to hazardous environments.
+The Python-based backend serves as the drone's brain, utilizing **YOLOv8 Nano** to detect directional signs and hazards. It processes incoming video frames and calculates autonomous movement vectors in real-time.
 
 ### 3. 🌉 Tello Bridge (The Communication)
-A low-latency **WebSocket** layer that synchronizes the Web UI and Python backend. It is designed to be API-compatible with `djitellopy`, making it easy to transition from simulation to real hardware.
+A low-latency **WebSocket** layer that synchronizes the Web UI and Python backend. It is API-compatible with `djitellopy`, ensuring a smooth transition to real hardware.
+
+---
+
+## 🖼️ System Architecture
+
+```mermaid
+graph TD
+    A[Web Simulator] <-->|Low Latency WebSockets| B[Python Tello Bridge]
+    B --> C[YOLOv8 Vision Processing]
+    C --> D[Autonomous Flight Logic]
+    D --> B
+    
+    subgraph Frontend Layer
+    A
+    end
+    
+    subgraph AI Intelligence Layer
+    C
+    D
+    end
+```
 
 ---
 
@@ -57,20 +72,18 @@ A low-latency **WebSocket** layer that synchronizes the Web UI and Python backen
 ---
 
 ## 🛠️ Mission Editor
-The built-in editor allows users to create complex parkour courses without touching a single line of code:
+The built-in editor allows users to create complex parkour courses without coding:
 - **Drag-and-Drop:** Intuitive interface for placing walls, signs, and hazards.
-- **Map Persistence:** Save your custom maps to **LocalStorage** and share them as JSON files.
-- **Infinite Variety:** Test your AI logic against an endless combination of mission scenarios.
+- **Map Persistence:** Save and load custom maps to **LocalStorage**.
 
 ---
 
 ## 🛰️ Autonomous Flight Logic
-The drone follows a sophisticated decision-making process:
-1. **Frame Capture:** The simulator captures a frame from the drone's FPV camera.
-2. **Detection:** YOLOv8 analyzes the frame to find directional signs.
-3. **Target Locking:** Once a sign is detected and confirmed (confidence > 0.6), the system locks onto it.
-4. **Maneuvering:** The drone adjusts its pitch, yaw, and throttle to follow the direction indicated by the sign.
-5. **Hazard Avoidance:** If fire or smoke is detected, the drone triggers an immediate emergency landing or reroutes.
+1. **Frame Capture:** Simulator captures FPV frames from the virtual drone.
+2. **Detection:** YOLOv8 analyzes frames to identify directional signs.
+3. **Target Locking:** System locks onto signs with high confidence (>0.6).
+4. **Maneuvering:** Drone adjusts flight vectors based on sign indicators.
+5. **Hazard Avoidance:** Immediate emergency response to fire or smoke detection.
 
 ---
 
@@ -81,18 +94,17 @@ The drone follows a sophisticated decision-making process:
 | Video Stream | 30 FPS | ✅ Stable |
 | AI Inference | < 25ms | ✅ Real-time |
 | Latency | < 10ms | ✅ Ultra-low |
-| Physics Loop | 60 Hz | ✅ Fluid |
 
 ---
 
-## 🚀 Getting Started
+## 🚀 Installation & Usage
 
-### 1. Web Environment
+### 1. Launch Web Environment
 ```bash
 npm install && npm run dev
 ```
 
-### 2. Python Environment
+### 2. Launch Python AI
 ```bash
 pip install ultralytics opencv-python websockets numpy
 python sim_test.py
@@ -107,12 +119,11 @@ python sim_test.py
 | **W/A/S/D** | Move Camera | Manual Override |
 | **Q/E** | Altitude | Hover Logic |
 | **T / L** | - | Takeoff / Land |
-| **Delete** | Remove Object | - |
 
 ---
 
 > [!TIP]
-> **Technical Note:** For optimal detection, the AI model performs best when directional signs occupy at least 15% of the frame area. Ensure your parkour paths allow for a clear approach vector.
+> **Technical Note:** For optimal detection, the AI model performs best when directional signs occupy at least 15% of the frame area.
 
 ---
 
