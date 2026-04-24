@@ -1,39 +1,40 @@
-# 🛸 Tello-Web: Autonomous Drone Simulation
+# Tello-Web: Autonomous Drone Simulation
 
 <div align="center">
-  <img src="https://img.shields.io/badge/Stack-Vite_%7C_Three.js_%7C_Python_%7C_YOLOv8-30363d?style=flat-square" />
-  <img src="https://img.shields.io/github/license/Leansxd/tello-web?style=flat-square&color=30363d" />
-  <img src="https://img.shields.io/github/stars/Leansxd/tello-web?style=flat-square&color=30363d" />
+  <img src="https://img.shields.io/badge/Vite-646CFF?style=for-the-badge&logo=vite&logoColor=white" />
+  <img src="https://img.shields.io/badge/Three.js-000000?style=for-the-badge&logo=three.dot-js&logoColor=white" />
+  <img src="https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white" />
+  <img src="https://img.shields.io/badge/YOLOv8-00FFFF?style=for-the-badge&logo=ultralytics&logoColor=black" />
 </div>
 
 <p align="center">
-  A high-fidelity 3D drone simulator and otonomous control ecosystem.
+  A high-fidelity 3D drone simulator and autonomous control ecosystem.
 </p>
 
 ---
 
-## 🌐 Overview
+## Overview
 **Tello-Web** is an advanced simulation platform that bridges the gap between virtual testing and real-world DJI Tello autonomous missions. Using **Three.js** for physics and **YOLOv8** for intelligence, it provides a safe, low-latency environment for AI research.
 
 ---
 
-## 📽️ Visual Tour
+## Visual Tour
 
 <div align="center">
-  <p><b>🕹️ Simulator Environment</b></p>
+  <p><b>Simulator Environment</b></p>
   <img src="public/tello3d.png" width="90%" style="border-radius: 8px; border: 1px solid #30363d;" />
 </div>
 
 <br />
 
 <div align="center">
-  <p><b>🧠 AI Computer Vision</b></p>
+  <p><b>AI Computer Vision</b></p>
   <img src="public/tellopy.png" width="70%" style="border-radius: 8px; border: 1px solid #30363d;" />
 </div>
 
 ---
 
-## 🏗️ System Architecture
+## System Architecture
 
 ```mermaid
 graph TD
@@ -45,7 +46,7 @@ graph TD
 
 ---
 
-## ✨ Key Features
+## Key Features
 
 - **Professional Physics:** Real-time drone dynamics powered by Three.js.
 - **Autonomous Navigation:** Real-time sign and hazard detection via YOLOv8.
@@ -54,7 +55,7 @@ graph TD
 
 ---
 
-## 📊 Performance
+## Performance
 
 | Metric | Target | Status |
 | :--- | :--- | :--- |
@@ -64,7 +65,7 @@ graph TD
 
 ---
 
-## 🚀 Installation
+## Installation
 
 ### 1. Web
 ```bash
@@ -79,7 +80,7 @@ python sim_test.py
 
 ---
 
-## 🎮 Controls
+## Controls
 
 | Key | Action |
 | :--- | :--- |
