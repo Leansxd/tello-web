@@ -17,9 +17,15 @@
 ## ✨ Key Features
 
 - **🕹️ Professional Parkour Simulator:** Physics-based 3D simulation with fluid graphics powered by Three.js.
+
+![Tello Drone](public/tello3d.png)
+
 - **🧠 YOLOv8 Autonomous Navigation:** Real-time AI detection of directional signs (Up, Down, Left, Right) and fire/smoke hazards.
 - **🛠️ Mission Editor:** Create custom parkour courses using drag-and-drop. Save and load maps via LocalStorage.
 - **🎥 FPV Video Streaming:** Live 30 FPS camera feed from the drone to the Python backend via WebSockets.
+
+![Tello Drone](public/tellopy.png)
+
 - **🌉 Tello Bridge:** A robust communication layer compatible with the `djitellopy` API, connecting Web and Python ecosystems.
 
 ---
@@ -92,5 +98,3 @@ The system is equipped with an automated failsafe mechanism. The drone will auto
 > For optimal AI performance, ensure the **FPV camera** in the simulator has a clear line of sight. Align directional signs vertically along the drone's intended path for better detection accuracy.
 
 ---
-
-
