@@ -19,40 +19,6 @@
 
 ---
 
-## 🏗️ Core Components
-
-### 1. 🕹️ 3D Simulator (The Environment)
-Built with **Vite** and **Three.js**, the simulator handles accurate flight physics, 720p virtual FPV camera streaming, and a real-time collision system for obstacles and hazards.
-
-### 2. 🧠 Intelligence Layer (The Brain)
-The Python-based backend serves as the drone's brain, utilizing **YOLOv8 Nano** to detect directional signs and hazards. It processes incoming video frames and calculates autonomous movement vectors in real-time.
-
-### 3. 🌉 Tello Bridge (The Communication)
-A low-latency **WebSocket** layer that synchronizes the Web UI and Python backend. It is API-compatible with `djitellopy`, ensuring a smooth transition to real hardware.
-
----
-
-## 🖼️ System Architecture
-
-```mermaid
-graph TD
-    A[Web Simulator] <-->|Low Latency WebSockets| B[Python Tello Bridge]
-    B --> C[YOLOv8 Vision Processing]
-    C --> D[Autonomous Flight Logic]
-    D --> B
-    
-    subgraph Frontend Layer
-    A
-    end
-    
-    subgraph AI Intelligence Layer
-    C
-    D
-    end
-```
-
----
-
 ## 📽️ Visual Journey
 
 <div align="center">
@@ -71,19 +37,49 @@ graph TD
 
 ---
 
-## 🛠️ Mission Editor
-The built-in editor allows users to create complex parkour courses without coding:
-- **Drag-and-Drop:** Intuitive interface for placing walls, signs, and hazards.
-- **Map Persistence:** Save and load custom maps to **LocalStorage**.
+## ✨ Key Features
+
+- **Professional Physics:** Real-time drone dynamics and collision handling powered by Three.js.
+- **Autonomous Navigation:** AI-driven sign and hazard detection using YOLOv8.
+- **Mission Editor:** Integrated drag-and-drop tool for custom course creation.
+- **Low Latency:** High-speed WebSocket bridge for seamless FPV video streaming.
+- **Map Persistence:** Save and load your custom mission layouts via LocalStorage.
 
 ---
 
-## 🛰️ Autonomous Flight Logic
-1. **Frame Capture:** Simulator captures FPV frames from the virtual drone.
-2. **Detection:** YOLOv8 analyzes frames to identify directional signs.
-3. **Target Locking:** System locks onto signs with high confidence (>0.6).
-4. **Maneuvering:** Drone adjusts flight vectors based on sign indicators.
-5. **Hazard Avoidance:** Immediate emergency response to fire or smoke detection.
+## 🏗️ System Architecture
+
+The project is divided into two main layers communicating over a low-latency bridge.
+
+```mermaid
+graph TD
+    A[Web Simulator] <-->|Low Latency WebSockets| B[Python Tello Bridge]
+    B --> C[YOLOv8 Vision Processing]
+    C --> D[Flight Logic]
+    D --> B
+    
+    subgraph Frontend Layer
+    A
+    end
+    
+    subgraph AI Intelligence Layer
+    C
+    D
+    end
+```
+
+---
+
+## 🔬 Technical Deep Dive
+
+### 1. 🕹️ 3D Simulator (The Environment)
+Handles accurate flight physics, 720p virtual FPV camera streaming, and real-time collision detection.
+
+### 2. 🧠 Intelligence Layer (The Brain)
+Utilizes **YOLOv8 Nano** to detect directional signs and hazards. It processes frames and calculates movement vectors in real-time.
+
+### 3. 🛰️ Autonomous Flight Logic
+The system follows a continuous loop: **Frame Capture** → **Object Detection** → **Target Locking** → **Vector Calculation** → **Maneuver Execution**.
 
 ---
 
@@ -123,7 +119,7 @@ python sim_test.py
 ---
 
 > [!TIP]
-> **Technical Note:** For optimal detection, the AI model performs best when directional signs occupy at least 15% of the frame area.
+> **Technical Note:** For optimal detection, ensure directional signs occupy at least 15% of the frame area.
 
 ---
 
