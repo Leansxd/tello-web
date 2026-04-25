@@ -429,11 +429,11 @@ class TelloLandscape {
         group.userData = {
             id: Date.now().toString(),
             type: type,
-            w: w,
-            h: h,
+            w: parseFloat(w),
+            h: parseFloat(h),
             wallColor: wallColor,
             customUrl: customUrl,
-            iconSize: iconSize
+            iconSize: parseFloat(iconSize)
         };
         
         this.scene.add(group);
@@ -488,8 +488,8 @@ class TelloLandscape {
 
     saveMap() {
         const data = this.targets.map(t => ({
-            position: t.position,
-            rotation: t.rotation,
+            position: { x: t.position.x, y: t.position.y, z: t.position.z },
+            rotation: { x: t.rotation.x, y: t.rotation.y, z: t.rotation.z },
             userData: t.userData
         }));
         const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
@@ -514,7 +514,7 @@ class TelloLandscape {
                 boxMat.map = new THREE.TextureLoader().load(ud.customUrl);
             }
             
-            const box = new THREE.Mesh(new THREE.BoxGeometry(parseFloat(ud.w), parseFloat(ud.h), 2), boxMat);
+            const box = new THREE.Mesh(new THREE.BoxGeometry(ud.w, ud.h, 2), boxMat);
             group.add(box);
             
             if (ud.type !== 'CUSTOM_WALL') {
@@ -528,8 +528,6 @@ class TelloLandscape {
                 const iconMat = new THREE.MeshBasicMaterial({ map: iconTex, transparent: true, side: THREE.DoubleSide });
                 const icon = new THREE.Mesh(new THREE.PlaneGeometry(3, 3), iconMat);
                 icon.scale.set(ud.iconSize / 3, ud.iconSize / 3, 1);
-                
-                // Position logic from setupDesigner
                 icon.position.set(0, ud.h / 2, 1.1);
                 
                 if (ud.type === 'LEFT') icon.rotation.z = Math.PI / 2;
@@ -539,7 +537,7 @@ class TelloLandscape {
             }
             
             group.position.set(item.position.x, item.position.y, item.position.z);
-            group.rotation.set(item.rotation._x, item.rotation._y, item.rotation._z);
+            group.rotation.set(item.rotation.x, item.rotation.y, item.rotation.z);
             group.userData = ud;
             
             this.scene.add(group);
@@ -683,4 +681,4 @@ class TelloLandscape {
     }
 }
 
-new TelloLandscape();
+window.telloSim = new TelloLandscape();
