@@ -47,7 +47,7 @@ class DroneConfig:
     EKRAN_YUKSEKLIK = 720
     
     AI_GUVEN_ESIGI    = 0.50    
-    FIRE_CONF         = 0.75    # Kırmızıya hemen kilitlenmemesi için yükseltildi
+    FIRE_CONF         = 0.40    # Alevleri daha iyi algılaması için düşürüldü
     SMOKE_CONF        = 0.50    
     AI_IMG_SIZE       = 640     
     ARAMA_HIZI        = 10 if SIMULATION else 20  
@@ -124,12 +124,53 @@ class AIWorker(threading.Thread):
 class HUDSystem:
     @staticmethod
     def draw_fighter_hud(frame, ds, ai_fps):
-        font, white, neon = cv2.FONT_HERSHEY_SIMPLEX, (230,230,230), (0,255,0)
-        cv2.putText(frame, f"STATUS: {ds['msg']}", (20, 40), font, 0.5, (0, 255, 255), 1)
-        cv2.putText(frame, f"TARGET: {str(ds['target']).upper()}", (20, 70), font, 0.6, (255, 165, 0), 2)
-        cv2.putText(frame, f"ALT: {ds['h']}cm | FPS: {ai_fps}", (20, 100), font, 0.5, white, 1)
         h, w = frame.shape[:2]
-        cv2.drawMarker(frame, (w//2, h//2), (0, 255, 0), cv2.MARKER_CROSS, 20, 1)
+        font = cv2.FONT_HERSHEY_SIMPLEX
+        
+        # Aviation Standard Colors
+        white = (240, 240, 240)
+        green = (0, 200, 0)
+        red = (0, 0, 220)
+        panel_bg = (15, 15, 15)
+        
+        # Top Telemetry Bar
+        cv2.rectangle(frame, (0, 0), (w, 35), panel_bg, -1)
+        cv2.line(frame, (0, 35), (w, 35), white, 1)
+        
+        # Telemetry Text
+        cv2.putText(frame, f"MODE: {ds['msg']}", (15, 23), font, 0.5, white, 1)
+        
+        target_color = red if ds['target'] in ['fire', 'smoke'] else green
+        cv2.putText(frame, f"TRGT: {str(ds['target']).upper()}", (w//2 - 60, 23), font, 0.5, target_color, 2)
+        
+        cv2.putText(frame, f"ALT: {ds['h']}cm  FPS: {ai_fps}", (w - 200, 23), font, 0.5, white, 1)
+        
+        # Aviation Corner Brackets (Premium Military Style)
+        cx, cy = w//2, h//2
+        s = 50  # Box size
+        ll = 15 # Line length
+        th = 2  # Thickness
+        
+        # Top-Left
+        cv2.line(frame, (cx - s, cy - s), (cx - s + ll, cy - s), green, th)
+        cv2.line(frame, (cx - s, cy - s), (cx - s, cy - s + ll), green, th)
+        # Top-Right
+        cv2.line(frame, (cx + s, cy - s), (cx + s - ll, cy - s), green, th)
+        cv2.line(frame, (cx + s, cy - s), (cx + s, cy - s + ll), green, th)
+        # Bottom-Left
+        cv2.line(frame, (cx - s, cy + s), (cx - s + ll, cy + s), green, th)
+        cv2.line(frame, (cx - s, cy + s), (cx - s, cy + s - ll), green, th)
+        # Bottom-Right
+        cv2.line(frame, (cx + s, cy + s), (cx + s - ll, cy + s), green, th)
+        cv2.line(frame, (cx + s, cy + s), (cx + s, cy + s - ll), green, th)
+        
+        # Center Dot
+        cv2.circle(frame, (cx, cy), 2, green, -1)
+        
+        # Velocity Vector
+        vx, vy = ds.get('vx', 0), ds.get('vy', 0)
+        if abs(vx) > 0 or abs(vy) > 0:
+            cv2.arrowedLine(frame, (cx, cy), (cx + int(vx*2), cy - int(vy*2)), white, 2, tipLength=0.2)
 
 class TelloAutonomousApp:
     def __init__(self):
@@ -233,8 +274,9 @@ class TelloAutonomousApp:
         while self.running:
             raw = self.frame_read.frame if self.frame_read else None
             if raw is not None and raw.size > 0:
+                h_raw, w_raw = raw.shape[:2]
                 frame = cv2.resize(raw, (960, 720))
-                ratio_x, ratio_y = 960/640, 720/480
+                ratio_x, ratio_y = 960 / w_raw, 720 / h_raw
                 if len(self.bbox_history) > 0:
                     box = np.mean(self.bbox_history, axis=0)
                     x1, y1, x2, y2 = int(box[0]*ratio_x), int(box[1]*ratio_y), int(box[2]*ratio_x), int(box[3]*ratio_y)
@@ -276,7 +318,15 @@ class TelloAutonomousApp:
             elif cmd in ['sag', 'right']: 
                 self.tello.rotate_clockwise(90); self.tello.move_forward(40)
             elif cmd in ['fire', 'smoke']:
-                self.tello.move_back(50); self.tello.land(); self.running = False
+                # Aksiyonlu kaçış: Geri çekil, takla at (flip) ve in.
+                self.tello.move_back(50)
+                try:
+                    self.tello.flip_back() # Gerçek tello'da geriye takla
+                except:
+                    pass
+                time.sleep(1.0)
+                self.tello.land()
+                self.running = False
             time.sleep(0.5); self.tello.send_rc_control(0,0,0,0)
         
         self.last_cmd_time = time.time()

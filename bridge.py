@@ -60,55 +60,62 @@ class Tello:
             ]
         })
 
-    def _do_maneuver(self, lr, fb, ud, yaw, duration):
-        """Gerçek Tello'daki bloklayan (blocking) hareketleri taklit eder."""
-        start = time.time()
-        while time.time() - start < duration:
-            self.send_rc_control(lr, fb, ud, yaw)
-            time.sleep(0.05)
-        self.send_rc_control(0, 0, 0, 0)
-        time.sleep(0.5) # Durma payı
-
     # Gerçek Tello Komutları (cm bazlı varsayalım)
     def move_forward(self, dist_cm):
         print(f"[BRIDGE] İleri gidiliyor: {dist_cm}cm")
-        self._do_maneuver(0, 40, 0, 0, dist_cm / 40)
+        self._send({"type": "move", "dir": "forward", "dist": dist_cm})
+        time.sleep(dist_cm / 40.0)
 
     def move_back(self, dist_cm):
         print(f"[BRIDGE] Geri gidiliyor: {dist_cm}cm")
-        self._do_maneuver(0, -40, 0, 0, dist_cm / 40)
+        self._send({"type": "move", "dir": "back", "dist": dist_cm})
+        time.sleep(dist_cm / 40.0)
 
     def move_left(self, dist_cm):
         print(f"[BRIDGE] Sola gidiliyor: {dist_cm}cm")
-        self._do_maneuver(-40, 0, 0, 0, dist_cm / 40)
+        self._send({"type": "move", "dir": "left", "dist": dist_cm})
+        time.sleep(dist_cm / 40.0)
 
     def move_right(self, dist_cm):
         print(f"[BRIDGE] Sağa gidiliyor: {dist_cm}cm")
-        self._do_maneuver(40, 0, 0, 0, dist_cm / 40)
+        self._send({"type": "move", "dir": "right", "dist": dist_cm})
+        time.sleep(dist_cm / 40.0)
 
     def move_up(self, dist_cm):
         print(f"[BRIDGE] Yukarı çıkılıyor: {dist_cm}cm")
-        self._do_maneuver(0, 0, 50, 0, dist_cm / 40)
+        self._send({"type": "move", "dir": "up", "dist": dist_cm})
+        time.sleep(dist_cm / 40.0)
 
     def move_down(self, dist_cm):
         print(f"[BRIDGE] Aşağı iniliyor: {dist_cm}cm")
-        self._do_maneuver(0, 0, -50, 0, dist_cm / 40)
+        self._send({"type": "move", "dir": "down", "dist": dist_cm})
+        time.sleep(dist_cm / 40.0)
 
     def rotate_clockwise(self, angle):
         print(f"[BRIDGE] Sağa dönülüyor: {angle} derece")
-        self._send({"type": "rotate", "val": angle})
-        time.sleep(1.5)
+        self._send({"type": "rotate", "val": -angle}) # Three.js için sağ yön negatif
+        time.sleep(angle / 90.0)
 
     def rotate_counter_clockwise(self, angle):
         print(f"[BRIDGE] Sola dönülüyor: {angle} derece")
-        self._send({"type": "rotate", "val": -angle})
+        self._send({"type": "rotate", "val": angle}) # Three.js için sol yön pozitif
+        time.sleep(angle / 90.0)
+
+    def flip_back(self):
+        print("[BRIDGE] Geriye takla atılıyor!")
+        self._send({"type": "flip", "dir": "back"})
         time.sleep(1.5)
 
     def get_battery(self): return 90
     def get_height(self): return int(self.state.latest_alt * 100) if hasattr(self.state, 'latest_alt') else 0
     def get_current_state(self):
         return {
-            'h': 100, 'vgx': 0, 'vgy': 0, 'vgz': 0, 'temph': 45, 'bat': 85
+            'h': int(self.state.latest_alt * 100) if hasattr(self.state, 'latest_alt') else 0, 
+            'vgx': int(self.state.latest_vx) if hasattr(self.state, 'latest_vx') else 0, 
+            'vgy': int(self.state.latest_vy) if hasattr(self.state, 'latest_vy') else 0, 
+            'vgz': 0, 
+            'temph': 45, 
+            'bat': 85
         }
     def send_read_command(self, cmd): 
         if "tof" in cmd.lower(): return "700"
@@ -145,8 +152,10 @@ class Tello:
                     img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
                     if img is not None:
                         with self.state.lock: self.state.latest_frame = img
-                if d.get('alt'):
+                if d.get('alt') is not None:
                     self.state.latest_alt = d['alt']
+                    self.state.latest_vx = d.get('vx', 0)
+                    self.state.latest_vy = d.get('vy', 0)
         except: pass
         finally: 
             if self.state.websocket == ws:
