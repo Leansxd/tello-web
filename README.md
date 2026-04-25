@@ -124,6 +124,6 @@ python sim_test.py
 ---
 
 <div align="center">
-  <sub>Developed with ❤️ by <b>Leansxd</b></sub><br />
+  <sub>Developed with ❤️ by <b>Leans</b></sub><br />
   <small>Built for Drone Innovation & AI Research</small>
 </div>
