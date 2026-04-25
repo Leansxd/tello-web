@@ -64,42 +64,34 @@ class Tello:
     def move_forward(self, dist_cm):
         print(f"[BRIDGE] İleri gidiliyor: {dist_cm}cm")
         self._send({"type": "move", "dir": "forward", "dist": dist_cm})
-        time.sleep(dist_cm / 40.0)
 
     def move_back(self, dist_cm):
         print(f"[BRIDGE] Geri gidiliyor: {dist_cm}cm")
         self._send({"type": "move", "dir": "back", "dist": dist_cm})
-        time.sleep(dist_cm / 40.0)
 
     def move_left(self, dist_cm):
         print(f"[BRIDGE] Sola gidiliyor: {dist_cm}cm")
         self._send({"type": "move", "dir": "left", "dist": dist_cm})
-        time.sleep(dist_cm / 40.0)
 
     def move_right(self, dist_cm):
         print(f"[BRIDGE] Sağa gidiliyor: {dist_cm}cm")
         self._send({"type": "move", "dir": "right", "dist": dist_cm})
-        time.sleep(dist_cm / 40.0)
 
     def move_up(self, dist_cm):
         print(f"[BRIDGE] Yukarı çıkılıyor: {dist_cm}cm")
         self._send({"type": "move", "dir": "up", "dist": dist_cm})
-        time.sleep(dist_cm / 40.0)
 
     def move_down(self, dist_cm):
         print(f"[BRIDGE] Aşağı iniliyor: {dist_cm}cm")
         self._send({"type": "move", "dir": "down", "dist": dist_cm})
-        time.sleep(dist_cm / 40.0)
 
     def rotate_clockwise(self, angle):
         print(f"[BRIDGE] Sağa dönülüyor: {angle} derece")
         self._send({"type": "rotate", "val": -angle}) # Three.js için sağ yön negatif
-        time.sleep(angle / 90.0)
 
     def rotate_counter_clockwise(self, angle):
         print(f"[BRIDGE] Sola dönülüyor: {angle} derece")
         self._send({"type": "rotate", "val": angle}) # Three.js için sol yön pozitif
-        time.sleep(angle / 90.0)
 
     def flip_back(self):
         print("[BRIDGE] Geriye takla atılıyor!")

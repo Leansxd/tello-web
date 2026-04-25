@@ -34,12 +34,12 @@ logging.getLogger('djitellopy').setLevel(logging.ERROR)
 # ⚙️ KONFİGÜRASYON SİSTEMİ
 # ==========================================
 class DroneConfig:
-    SAGA_SOLA_MESAFE    = 40
+    SAGA_SOLA_MESAFE    = 1000
     ILERI_GITME_MESAFE  = 30
     GERI_GITME_MESAFE   = 50
-    HEDEF_IDEAL_MESAFE_CM = 80 
-    YUKARI_GITME_MESAFE = 700 
-    ASAGI_GITME_MESAFE  = 40
+    HEDEF_IDEAL_MESAFE_CM = 250 
+    YUKARI_GITME_MESAFE = 450 
+    ASAGI_GITME_MESAFE  = 100
     DONUS_ACISI         = 90
     
     BATTERY_FAILSAFE    = 10      
@@ -50,14 +50,15 @@ class DroneConfig:
     FIRE_CONF         = 0.40    # Alevleri daha iyi algılaması için düşürüldü
     SMOKE_CONF        = 0.50    
     AI_IMG_SIZE       = 640     
-    ARAMA_HIZI        = 10 if SIMULATION else 20  
+    ARAMA_HIZI        = 7 if SIMULATION else 20  
     TARAMA_BEKLEME    = 2.0     
-    TETIKLEME_GENISLIK = 240 if SIMULATION else 320 
-    MAX_YAKLASMA_HIZI = 14 if SIMULATION else 18      
-    MIN_YAKLASMA_HIZI = 8      
+    TETIKLEME_GENISLIK = 180 if SIMULATION else 320 
+    MAX_YAKLASMA_HIZI = 15 if SIMULATION else 18      
+    MIN_YAKLASMA_HIZI = 12      
     
-    YATAY_HASSASIYET = 120 
-    DIKEY_HASSASIYET = 120 
+    YATAY_HASSASIYET = 160 
+    DIKEY_HASSASIYET = 160 
+    TETIKLEME_GENISLIK = 130 
 
 # ==========================================
 # 🧠 ASENKRON AI İŞÇİSİ
@@ -307,17 +308,18 @@ class TelloAutonomousApp:
         print(f"[ACTION] {cmd.upper()}!")
         with self.cmd_lock:
             self.tello.send_rc_control(0,0,0,0); time.sleep(0.8)
-            if cmd in ['yukari', 'up', 'yukarı']: 
+            label = cmd.lower()
+            if label in ['yukari', 'up', 'yukarı']: 
                 self.tello.move_up(self.cfg.YUKARI_GITME_MESAFE)
                 self.tello.move_forward(60) 
-            elif cmd in ['asagi', 'assagi', 'down', 'aşağı']: 
+            elif label in ['asagi', 'assagi', 'down', 'aşağı']: 
                 self.tello.move_down(self.cfg.ASAGI_GITME_MESAFE)
                 self.tello.move_forward(60)
-            elif cmd in ['sol', 'left']: 
-                self.tello.rotate_counter_clockwise(90); self.tello.move_forward(40)
-            elif cmd in ['sag', 'right']: 
-                self.tello.rotate_clockwise(90); self.tello.move_forward(40)
-            elif cmd in ['fire', 'smoke']:
+            elif label in ['sol', 'left']: 
+                self.tello.move_left(self.cfg.SAGA_SOLA_MESAFE)
+            elif label in ['sag', 'right']: 
+                self.tello.move_right(self.cfg.SAGA_SOLA_MESAFE)
+            elif label in ['fire', 'smoke', 'ateş']:
                 # Aksiyonlu kaçış: Geri çekil, takla at (flip) ve in.
                 self.tello.move_back(50)
                 try:

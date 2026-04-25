@@ -637,6 +637,11 @@ class TelloLandscape {
                 const side = new THREE.Vector3(1, 0, 0).applyQuaternion(this.drone.quaternion);
                 this.droneTargetPos.addScaledVector(side, -d);
             }
+        } else if (msg.type === 'rotate') {
+            this.addLog(`Rotate: ${msg.dir} ${msg.val}deg`, "ai");
+            const rad = (msg.val * Math.PI) / 180;
+            if (msg.dir === 'cw') this.drone.rotation.y -= rad;
+            if (msg.dir === 'ccw') this.drone.rotation.y += rad;
         } else if (msg.type === 'rc') {
             // Komutu anlık uygulamak yerine hız hafızasına alıyoruz (Gerçekçi uçuş)
             this.droneRC = msg.val;
@@ -711,6 +716,9 @@ class TelloLandscape {
 
                 // Pozisyonu yumuşakça süzülerek hedefe götür (Hızlandırıldı)
                 this.drone.position.lerp(this.droneTargetPos, 0.15);
+
+                // OTOMATİK FREN (Damping): Komut gelmediğinde hız yavaşça sıfırlanır
+                this.droneRC = this.droneRC.map(v => v * 0.85); 
             } else {
                 // Düşüş fiziği
                 if (this.drone.position.y > 0.5) {
