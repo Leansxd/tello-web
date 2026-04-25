@@ -69,6 +69,7 @@ class TelloLandscape {
         this.crashRotation = new THREE.Vector3();
         this.droneRC = [0, 0, 0, 0]; // [lr, fb, ud, yv] - Sürekli hız için hafıza
         this.droneTargetPos = new THREE.Vector3(0, 1, 0); // Yumuşak hareket için hedef konum
+        this.propellers = []; // Pervaneleri döndürmek için hafıza
         
         this.init();
     }
@@ -259,9 +260,19 @@ class TelloLandscape {
         for (let i = 0; i < 4; i++) {
             const armGeo = new THREE.BoxGeometry(0.2, 0.1, 1.5);
             const arm = new THREE.Mesh(armGeo, bodyMat);
-            arm.position.set(i < 2 ? 1.2 : -1.2, 0, i % 2 === 0 ? 1.2 : -1.2);
+            const x = i < 2 ? 1.2 : -1.2;
+            const z = i % 2 === 0 ? 1.2 : -1.2;
+            arm.position.set(x, 0, z);
             arm.rotation.y = (i < 2 ? 1 : -1) * Math.PI / 4;
             droneGroup.add(arm);
+
+            // Pervaneler (Propellers)
+            const propGeo = new THREE.BoxGeometry(1.2, 0.02, 0.1);
+            const propMat = new THREE.MeshStandardMaterial({ color: 0x111111 });
+            const prop = new THREE.Mesh(propGeo, propMat);
+            prop.position.set(x * 1.3, 0.2, z * 1.3); // Kolun ucuna, biraz üstüne
+            droneGroup.add(prop);
+            this.propellers.push(prop);
         }
 
         this.drone = droneGroup;
@@ -719,6 +730,11 @@ class TelloLandscape {
 
                 // OTOMATİK FREN (Damping): Komut gelmediğinde hız yavaşça sıfırlanır
                 this.droneRC = this.droneRC.map(v => v * 0.85); 
+
+                // Pervaneleri Döndür
+                if (this.drone.position.y > 0.6) {
+                    this.propellers.forEach(p => p.rotation.y += 0.8);
+                }
             } else {
                 // Düşüş fiziği
                 if (this.drone.position.y > 0.5) {
