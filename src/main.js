@@ -85,6 +85,24 @@ class TelloLandscape {
         window.confirmDesign = () => this.confirmDesign();
         window.updateDesignerPreview = () => this.updateDesignerPreview();
         window.removeObj = (id) => this.removeTarget(id);
+        window.saveMap = () => this.saveMap();
+        
+        // Handle Map Loading
+        window.loadMapFile = (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                try {
+                    const data = JSON.parse(event.target.result);
+                    this.loadMapData(data);
+                } catch(err) {
+                    this.addLog("Invalid Map File!", "system");
+                }
+            };
+            reader.readAsText(file);
+            e.target.value = '';
+        };
         
         // Handle PC File Uploads
         window.uploadedImageData = null;
@@ -408,8 +426,15 @@ class TelloLandscape {
         }
         
         group.position.set(0, h/2, -20 * (this.targets.length + 1));
-        group.userData.id = Date.now().toString();
-        group.userData.type = type;
+        group.userData = {
+            id: Date.now().toString(),
+            type: type,
+            w: w,
+            h: h,
+            wallColor: wallColor,
+            customUrl: customUrl,
+            iconSize: iconSize
+        };
         
         this.scene.add(group);
         this.targets.push(group);
@@ -459,6 +484,70 @@ class TelloLandscape {
             this.targets.splice(idx, 1);
             this.renderObjectList();
         }
+    }
+
+    saveMap() {
+        const data = this.targets.map(t => ({
+            position: t.position,
+            rotation: t.rotation,
+            userData: t.userData
+        }));
+        const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `tello_map_${Date.now()}.json`;
+        a.click();
+        this.addLog("Map saved successfully.", "system");
+    }
+
+    loadMapData(data) {
+        // Clear current
+        [...this.targets].forEach(t => this.removeTarget(t.userData.id));
+        
+        data.forEach(item => {
+            const ud = item.userData;
+            const group = new THREE.Group();
+            const boxMat = new THREE.MeshStandardMaterial({ color: ud.wallColor });
+            
+            if (ud.type === 'CUSTOM_WALL' && ud.customUrl) {
+                boxMat.map = new THREE.TextureLoader().load(ud.customUrl);
+            }
+            
+            const box = new THREE.Mesh(new THREE.BoxGeometry(parseFloat(ud.w), parseFloat(ud.h), 2), boxMat);
+            group.add(box);
+            
+            if (ud.type !== 'CUSTOM_WALL') {
+                let iconTex;
+                if (ud.type === 'UP') iconTex = this.texUp;
+                else if (ud.type === 'DOWN') iconTex = this.texDown;
+                else if (ud.type === 'FIRE') iconTex = this.texFire;
+                else if (ud.type === 'LEFT' || ud.type === 'RIGHT') iconTex = this.texUp;
+                else if (ud.type === 'CUSTOM_ICON' && ud.customUrl) iconTex = new THREE.TextureLoader().load(ud.customUrl);
+
+                const iconMat = new THREE.MeshBasicMaterial({ map: iconTex, transparent: true, side: THREE.DoubleSide });
+                const icon = new THREE.Mesh(new THREE.PlaneGeometry(3, 3), iconMat);
+                icon.scale.set(ud.iconSize / 3, ud.iconSize / 3, 1);
+                
+                // Position logic from setupDesigner
+                icon.position.set(0, ud.h / 2, 1.1);
+                
+                if (ud.type === 'LEFT') icon.rotation.z = Math.PI / 2;
+                if (ud.type === 'RIGHT') icon.rotation.z = -Math.PI / 2;
+                
+                group.add(icon);
+            }
+            
+            group.position.set(item.position.x, item.position.y, item.position.z);
+            group.rotation.set(item.rotation._x, item.rotation._y, item.rotation._z);
+            group.userData = ud;
+            
+            this.scene.add(group);
+            this.targets.push(group);
+        });
+        
+        this.renderObjectList();
+        this.addLog("Map loaded successfully.", "system");
     }
 
     renderObjectList() {

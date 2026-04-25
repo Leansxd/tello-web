@@ -54,7 +54,11 @@
                 <div id="object-list" class="waypoint-list">
                     <!-- Dynamic List -->
                 </div>
-                <button class="btn-save" onclick="window.saveMap()">SAVE MISSION</button>
+                <div class="side-panel-footer">
+                    <input type="file" id="map-loader" accept=".json" style="display: none;" onchange="window.loadMapFile(event)">
+                    <button class="btn-save" onclick="document.getElementById('map-loader').click()" style="margin-bottom: 10px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);">LOAD MAP</button>
+                    <button class="btn-save" onclick="window.saveMap()">SAVE MAP</button>
+                </div>
             </aside>
 
             <!-- BOTTOM CENTER (MAP EDITOR DOCK) -->
