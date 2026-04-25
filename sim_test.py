@@ -38,7 +38,7 @@ class DroneConfig:
     ILERI_GITME_MESAFE  = 30
     GERI_GITME_MESAFE   = 50
     HEDEF_IDEAL_MESAFE_CM = 80 
-    YUKARI_GITME_MESAFE = 45 
+    YUKARI_GITME_MESAFE = 700 
     ASAGI_GITME_MESAFE  = 40
     DONUS_ACISI         = 90
     
@@ -141,7 +141,7 @@ class HUDSystem:
         cv2.putText(frame, f"MODE: {ds['msg']}", (15, 23), font, 0.5, white, 1)
         
         target_color = red if ds['target'] in ['fire', 'smoke'] else green
-        cv2.putText(frame, f"TRGT: {str(ds['target']).upper()}", (w//2 - 60, 23), font, 0.5, target_color, 2)
+        cv2.putText(frame, f"TARGET: {str(ds['target']).upper()}", (w//2 - 60, 23), font, 0.5, target_color, 2)
         
         cv2.putText(frame, f"ALT: {ds['h']}cm  FPS: {ai_fps}", (w - 200, 23), font, 0.5, white, 1)
         

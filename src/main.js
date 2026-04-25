@@ -65,6 +65,11 @@ class TelloLandscape {
             currentType: 'UP'
         };
 
+        this.isCrashed = false;
+        this.crashRotation = new THREE.Vector3();
+        this.droneRC = [0, 0, 0, 0]; // [lr, fb, ud, yv] - Sürekli hız için hafıza
+        this.droneTargetPos = new THREE.Vector3(0, 1, 0); // Yumuşak hareket için hedef konum
+        
         this.init();
     }
 
@@ -86,6 +91,7 @@ class TelloLandscape {
         window.updateDesignerPreview = () => this.updateDesignerPreview();
         window.removeObj = (id) => this.removeTarget(id);
         window.saveMap = () => this.saveMap();
+        window.droneAction = (a) => this.droneAction(a);
         
         // Handle Map Loading
         window.loadMapFile = (e) => {
@@ -243,6 +249,8 @@ class TelloLandscape {
 
     addDrone() {
         const droneGroup = new THREE.Group();
+        droneGroup.position.set(0, 0.5, 0); // Yerde başla
+        
         const bodyGeo = new THREE.BoxGeometry(2, 0.5, 2);
         const bodyMat = new THREE.MeshStandardMaterial({ color: 0x222222 });
         const body = new THREE.Mesh(bodyGeo, bodyMat);
@@ -259,11 +267,12 @@ class TelloLandscape {
         this.drone = droneGroup;
         this.drone.position.set(0, 1, 0);
         
-        // Dronun Gözü (FPV Kamera)
-        this.droneCamera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 1000);
-        this.droneCamera.position.set(0, 0.5, -1.2); // Gövdenin biraz önüne ve üstüne koyduk
-        this.droneCamera.lookAt(0, 0.5, -10); // İleri baksın
+        // Dronun Gözü (FPV Kamera - AI için 4:3 oranında sabitlendi)
+        this.droneCamera = new THREE.PerspectiveCamera(70, 4/3, 0.1, 1000);
+        this.droneCamera.position.set(0, 0.3, -0.8); // Gerçekçi burun pozisyonu
         this.drone.add(this.droneCamera);
+        
+        this.droneTargetPos.copy(this.drone.position);
 
         this.scene.add(this.drone);
     }
@@ -592,28 +601,127 @@ class TelloLandscape {
     }
 
     handleBridgeMessage(msg) {
+        if (!this.drone) return;
+        
         if (msg.type === 'takeoff') {
+            this.isCrashed = false; // Reset crash state
+            this.drone.rotation.set(0, 0, 0); // Fix tilt
             this.addLog("Command: TAKEOFF", "system");
-            this.drone.position.y = 5; // Sahte kalkış
-        } else if (msg.type === 'land') {
+            this.droneTargetPos.set(this.drone.position.x, 5, this.drone.position.z);
+            return;
+        }
+
+        if (this.isCrashed) return; // Ignore other commands if crashed
+        
+        if (msg.type === 'land') {
             this.addLog("Command: LAND", "system");
-            this.drone.position.y = 1;
+            this.droneTargetPos.y = 0.5;
         } else if (msg.type === 'move') {
             this.addLog(`Move: ${msg.dir} ${msg.dist}cm`, "ai");
-            if (msg.dir === 'up') this.drone.position.y += msg.dist / 100;
-            if (msg.dir === 'down') this.drone.position.y -= msg.dist / 100;
+            const d = msg.dist / 100;
+            if (msg.dir === 'up') this.droneTargetPos.y += d;
+            if (msg.dir === 'down') this.droneTargetPos.y -= d;
+            if (msg.dir === 'forward') {
+                const fwd = new THREE.Vector3(0, 0, -1).applyQuaternion(this.drone.quaternion);
+                this.droneTargetPos.addScaledVector(fwd, d);
+            }
+            if (msg.dir === 'back') {
+                const fwd = new THREE.Vector3(0, 0, -1).applyQuaternion(this.drone.quaternion);
+                this.droneTargetPos.addScaledVector(fwd, -d);
+            }
+            if (msg.dir === 'right') {
+                const side = new THREE.Vector3(1, 0, 0).applyQuaternion(this.drone.quaternion);
+                this.droneTargetPos.addScaledVector(side, d);
+            }
+            if (msg.dir === 'left') {
+                const side = new THREE.Vector3(1, 0, 0).applyQuaternion(this.drone.quaternion);
+                this.droneTargetPos.addScaledVector(side, -d);
+            }
         } else if (msg.type === 'rc') {
-            // Basit RC simulasyonu
-            const [lr, fb, ud, yv] = msg.val;
-            this.drone.position.y += ud * 0.01;
-            this.drone.translateZ(-fb * 0.01);
-            this.drone.translateX(lr * 0.01);
-            this.drone.rotation.y += -yv * 0.01;
+            // Komutu anlık uygulamak yerine hız hafızasına alıyoruz (Gerçekçi uçuş)
+            this.droneRC = msg.val;
+        }
+    }
+
+    droneAction(action) {
+        if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
+        
+        if (action === 'takeoff') {
+            this.isCrashed = false; // Reset crash state
+            if (this.drone) {
+                this.drone.rotation.set(0, 0, 0); // Düzelt
+                this.drone.position.y = 5;
+            }
+        }
+        
+        this.ws.send(JSON.stringify({ type: 'command', val: action }));
+    }
+
+    checkCollisions() {
+        if (!this.drone || this.targets.length === 0) return;
+        
+        const directions = [
+            new THREE.Vector3(0, 0, 1),
+            new THREE.Vector3(0, 0, -1),
+            new THREE.Vector3(1, 0, 0),
+            new THREE.Vector3(-1, 0, 0),
+            new THREE.Vector3(0, 1, 0),
+            new THREE.Vector3(0, -1, 0)
+        ];
+        
+        const raycaster = new THREE.Raycaster();
+        for (let dir of directions) {
+            const worldDir = dir.clone().applyQuaternion(this.drone.quaternion);
+            raycaster.set(this.drone.position, worldDir);
+            
+            const intersects = raycaster.intersectObjects(this.targets, true);
+            
+            if (intersects.length > 0 && intersects[0].distance < 1.2) {
+                this.isCrashed = true;
+                this.crashRotation.set(Math.random() * 0.2, 0, Math.random() * 0.2);
+                this.addLog("CRASH DETECTED! Drone is falling...", "system");
+                break;
+            }
         }
     }
 
     animate() {
         requestAnimationFrame(() => this.animate());
+        
+        // Dron Fiziği ve Çarpışma
+        if (this.drone) {
+            if (!this.isCrashed) {
+                // Sadece havadaysa (y > 1.5) çarpışma kontrolü yap, yerdeyken sensörleri kapat
+                if (this.drone.position.y > 1.5) {
+                    this.checkCollisions();
+                }
+                
+                // RC Hızlarını Uygula (Süzülme efekti)
+                const [lr, fb, ud, yv] = this.droneRC;
+                const vScale = 0.005; // Hız hassasiyeti
+                
+                // RC Hızlarını TargetPos'a ekle
+                this.droneTargetPos.y += ud * vScale;
+                const fwd = new THREE.Vector3(0, 0, -1).applyQuaternion(this.drone.quaternion);
+                const side = new THREE.Vector3(1, 0, 0).applyQuaternion(this.drone.quaternion);
+                this.droneTargetPos.addScaledVector(fwd, fb * vScale);
+                this.droneTargetPos.addScaledVector(side, lr * vScale);
+                
+                this.drone.rotation.y += -yv * vScale;
+
+                // Pozisyonu yumuşakça süzülerek hedefe götür (Hızlandırıldı)
+                this.drone.position.lerp(this.droneTargetPos, 0.15);
+            } else {
+                // Düşüş fiziği
+                if (this.drone.position.y > 0.5) {
+                    this.drone.position.y -= 0.3; // Yerçekimi
+                    this.drone.rotation.x += this.crashRotation.x;
+                    this.drone.rotation.z += this.crashRotation.z;
+                } else {
+                    this.drone.position.y = 0.5; // Yere çakıldı (Gömülme engellendi)
+                }
+            }
+        }
 
         // Noclip Movement Logic
         const speed = this.keys.shift ? 1.5 : 0.5; // Shift for sprint
