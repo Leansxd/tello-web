@@ -70,6 +70,9 @@ class TelloLandscape {
         this.droneRC = [0, 0, 0, 0]; // [lr, fb, ud, yv] - Sürekli hız için hafıza
         this.droneTargetPos = new THREE.Vector3(0, 1, 0); // Yumuşak hareket için hedef konum
         this.propellers = []; // Pervaneleri döndürmek için hafıza
+        this.trailPoints = []; // Uçuş izi için koordinatlar
+        this.lastPos = new THREE.Vector3(); // Hız hesabı için
+        this.waypointPoints = []; // Parkur rotası için koordinatlar
         
         this.init();
     }
@@ -285,6 +288,29 @@ class TelloLandscape {
         
         this.droneTargetPos.copy(this.drone.position);
 
+        this.droneTargetPos.copy(this.drone.position);
+        this.lastPos.copy(this.drone.position);
+
+        // Uçuş İzi (Trail) Nesnesi
+        const trailGeo = new THREE.BufferGeometry();
+        const trailMat = new THREE.LineBasicMaterial({ color: 0x00ff00, transparent: true, opacity: 0.6 });
+        this.trailLine = new THREE.Line(trailGeo, trailMat);
+        this.scene.add(this.trailLine);
+
+        // Parkur Rotası (Waypoints Path - Kesikli ve Şık)
+        const pathGeo = new THREE.BufferGeometry();
+        const pathMat = new THREE.LineDashedMaterial({ 
+            color: 0x00ffff, 
+            dashSize: 1.5, 
+            gapSize: 1, 
+            transparent: true, 
+            opacity: 0.5,
+            depthTest: false
+        });
+        this.waypointLine = new THREE.Line(pathGeo, pathMat);
+        this.waypointLine.renderOrder = 999;
+        this.scene.add(this.waypointLine);
+
         this.scene.add(this.drone);
     }
 
@@ -460,6 +486,7 @@ class TelloLandscape {
         this.targets.push(group);
         this.closeDesigner();
         this.renderObjectList();
+        this.updateWaypointPath(); // Yolu güncelle
         this.addLog(`Custom ${type} object added.`, "system");
     }
 
@@ -489,6 +516,7 @@ class TelloLandscape {
             if (intersects.length > 0) {
                 this.draggedObj.position.x = intersects[0].point.x;
                 this.draggedObj.position.z = intersects[0].point.z;
+                this.updateWaypointPath(); // Sürüklerken yolu güncelle
             }
         };
         const onUp = () => { this.draggedObj = null; this.controls.enabled = true; };
@@ -503,6 +531,7 @@ class TelloLandscape {
             this.scene.remove(this.targets[idx]);
             this.targets.splice(idx, 1);
             this.renderObjectList();
+            this.updateWaypointPath(); // Silince yolu güncelle
         }
     }
 
@@ -565,6 +594,7 @@ class TelloLandscape {
         });
         
         this.renderObjectList();
+        this.updateWaypointPath(); // Harita yüklenince yolu güncelle
         this.addLog("Map loaded successfully.", "system");
     }
 
@@ -745,6 +775,39 @@ class TelloLandscape {
                     this.drone.position.y = 0.5; // Yere çakıldı (Gömülme engellendi)
                 }
             }
+
+            // --- HUD ve Telemetri Güncelleme ---
+            const now = performance.now();
+            const dt = (now - (this.lastTime || now)) / 1000;
+            this.lastTime = now;
+
+            // Hız Hesabı (SPD)
+            const dist = this.drone.position.distanceTo(this.lastPos);
+            const speed = dt > 0 ? (dist / dt).toFixed(1) : "0.0";
+            this.lastPos.copy(this.drone.position);
+
+            // Verileri DOM'a bas
+            const alt = Math.max(0, this.drone.position.y - 0.5).toFixed(1);
+            const yaw = Math.round((THREE.MathUtils.radToDeg(this.drone.rotation.y) % 360 + 360) % 360);
+            
+            document.getElementById('stat-alt').innerText = `${alt}m`;
+            document.getElementById('stat-spd').innerText = `${speed} m/s`;
+            document.getElementById('stat-yaw').innerText = `${yaw}°`;
+            
+            let status = "IDLE";
+            if (this.isCrashed) status = "CRASHED";
+            else if (alt > 0.1) status = "FLYING";
+            document.getElementById('drone-status').innerText = status;
+
+            // Uçuş İzi Güncelleme (Trail)
+            if (alt > 0.1 && !this.isCrashed) {
+                this.trailPoints.push(this.drone.position.clone());
+                if (this.trailPoints.length > 300) this.trailPoints.shift();
+                this.trailLine.geometry.setFromPoints(this.trailPoints);
+            } else if (alt < 0.1) {
+                this.trailPoints = [];
+                this.trailLine.geometry.setFromPoints([]);
+            }
         }
 
         // Noclip Movement Logic
@@ -810,6 +873,29 @@ class TelloLandscape {
         const time = `${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`;
         container.innerHTML += `<div class="log-entry ${type}">[${time}] ${msg}</div>`;
         container.scrollTop = container.scrollHeight;
+    }
+
+    updateWaypointPath() {
+        if (!this.waypointLine) return;
+        
+        // Başlangıç noktası + tüm hedeflerin pozisyonları
+        const points = [
+            new THREE.Vector3(0, 0.5, 0), 
+            ...this.targets.map(t => t.position.clone())
+        ];
+        
+        if (points.length > 1) {
+            // Eski geometriyi temizle (Hafıza dostu)
+            this.waypointLine.geometry.dispose();
+            
+            // Yeni geometri oluştur
+            const newGeo = new THREE.BufferGeometry().setFromPoints(points);
+            this.waypointLine.geometry = newGeo;
+            this.waypointLine.computeLineDistances(); // Kesikli çizgi için şart
+            this.waypointLine.visible = true;
+        } else {
+            this.waypointLine.visible = false;
+        }
     }
 }
 
