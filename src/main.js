@@ -74,7 +74,37 @@ class TelloLandscape {
         this.lastPos = new THREE.Vector3(); // Hız hesabı için
         this.waypointPoints = []; // Parkur rotası için koordinatlar
         
+        this.currentTipPage = 0;
+        this.tips = [
+            `<b>1. UÇUŞ KONTROLLERİ</b><ul>
+                <li><b>T Tuşu:</b> Dronu havalandırır.</li>
+                <li><b>L Tuşu:</b> Dronu yere indirir.</li>
+                <li><b>Kamera:</b> Yukardaki küçük ekran dronun ön kamerasını gösterir.</li>
+            </ul>`,
+            `<b>2. NESNE EKLEME (ADD)</b><ul>
+                <li><b>ADD:</b> Sağ alttaki butona basarak yeni bir duvar ekleyebilirsin.</li>
+                <li><b>Ayarlar:</b> Genişlik, yükseklik ve ikon tipini seçebilirsin.</li>
+                <li><b>ELEVATION:</b> Duvarın yerden ne kadar yüksekte doğacağını ayarlar.</li>
+            </ul>`,
+            `<b>3. NESNE HAREKETİ (MOUSE)</b><ul>
+                <li><b>Sürükleme:</b> Haritadaki bir kutuya tıkla ve basılı tutarak yerde gezdir.</li>
+                <li><b>HAVAYA KALDIRMA:</b> Bir kutuyu sürüklerken klavyeden <b>ALT</b> tuşuna basılı tutarsan nesne havaya kalkar.</li>
+            </ul>`,
+            `<b>4. HARİTA VE LİSTE</b><ul>
+                <li><b>Silme (DEL):</b> Sağdaki listeden çarpı (X) butonuna basarak nesneyi silebilirsin.</li>
+                <li><b>KAYDET (SAVE):</b> Tasarladığın parkuru PC'ne dosya olarak indirir.</li>
+                <li><b>YÜKLE (LOAD):</b> Kayıtlı haritayı geri açar.</li>
+            </ul>`,
+            `<b>5. KAMERA VE SIFIRLAMA</b><ul>
+                <li><b>Sol Tık:</b> Sahnenin etrafında döner.</li>
+                <li><b>Sağ Tık:</b> Kamerayı sağa sola kaydırır.</li>
+                <li><b>Scroll:</b> Yaklaşır / Uzaklaşır.</li>
+                <li><b>F5:</b> Her şeyi siler ve baştan başlatır.</li>
+            </ul>`
+        ];
+
         this.init();
+        this.updateTip();
     }
 
     async init() {
@@ -253,37 +283,66 @@ class TelloLandscape {
 
     addDrone() {
         const droneGroup = new THREE.Group();
-        droneGroup.position.set(0, 0.5, 0); // Yerde başla
-        
-        const bodyGeo = new THREE.BoxGeometry(2, 0.5, 2);
-        const bodyMat = new THREE.MeshStandardMaterial({ color: 0x222222 });
-        const body = new THREE.Mesh(bodyGeo, bodyMat);
-        droneGroup.add(body);
-
-        for (let i = 0; i < 4; i++) {
-            const armGeo = new THREE.BoxGeometry(0.2, 0.1, 1.5);
-            const arm = new THREE.Mesh(armGeo, bodyMat);
-            const x = i < 2 ? 1.2 : -1.2;
-            const z = i % 2 === 0 ? 1.2 : -1.2;
-            arm.position.set(x, 0, z);
-            arm.rotation.y = (i < 2 ? 1 : -1) * Math.PI / 4;
-            droneGroup.add(arm);
-
-            // Pervaneler (Propellers)
-            const propGeo = new THREE.BoxGeometry(1.2, 0.02, 0.1);
-            const propMat = new THREE.MeshStandardMaterial({ color: 0x111111 });
-            const prop = new THREE.Mesh(propGeo, propMat);
-            prop.position.set(x * 1.3, 0.2, z * 1.3); // Kolun ucuna, biraz üstüne
-            droneGroup.add(prop);
-            this.propellers.push(prop);
-        }
-
+        droneGroup.position.set(0, 1, 0); 
         this.drone = droneGroup;
-        this.drone.position.set(0, 1, 0);
+
+        // Fallback Placeholder
+        const placeholder = new THREE.Mesh(
+            new THREE.BoxGeometry(1.5, 0.4, 1.5), 
+            new THREE.MeshStandardMaterial({ color: 0x333333, transparent: true, opacity: 0.5 })
+        );
+        droneGroup.add(placeholder);
+
+        // GLTF Loader
+        const loader = new GLTFLoader();
+        loader.load('/src/assets/dron.glb', (gltf) => {
+            placeholder.visible = false;
+            const model = gltf.scene;
+            model.scale.set(0.4, 0.4, 0.4);
+            model.rotation.y = Math.PI / 2; // 90 derece sola döndürüldü
+            droneGroup.add(model);
+
+            this.propellers = []; 
+            console.log("[ASSET] Drone sub-objects:", model.children.length);
+            
+            // Pervane taraması (Daha agresif)
+            model.traverse((child) => {
+                const name = child.name.toLowerCase();
+                if (child.isMesh && (
+                    name.includes('prop') || name.includes('rotor') ||
+                    name.includes('blade') || name.includes('fan') ||
+                    name.includes('wing') || name.includes('motor')
+                )) {
+                    console.log("[ASSET] ✅ Propeller found:", child.name);
+                    this.propellers.push(child);
+                }
+            });
+
+            // Modelin kendi animasyonları varsa başlat (Bazı modellerde pervane döngüsü hazır gelir)
+            if (gltf.animations && gltf.animations.length > 0) {
+                console.log("[ASSET] Animations found, playing...");
+                this.mixer = new THREE.AnimationMixer(model);
+                gltf.animations.forEach((clip) => {
+                    this.mixer.clipAction(clip).play();
+                });
+            }
+
+            if (this.propellers.length === 0) {
+                console.warn("[ASSET] ⚠️ No propeller meshes found in model, adding custom ones.");
+                for (let i = 0; i < 4; i++) {
+                    const prop = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.02, 0.08), new THREE.MeshStandardMaterial({ color: 0x111111 }));
+                    const x = i < 2 ? 0.35 : -0.35; const z = i % 2 === 0 ? 0.35 : -0.35;
+                    prop.position.set(x, 0.1, z);
+                    droneGroup.add(prop);
+                    this.propellers.push(prop);
+                }
+            }
+        });
         
         // Dronun Gözü (FPV Kamera - AI için 4:3 oranında sabitlendi)
-        this.droneCamera = new THREE.PerspectiveCamera(70, 4/3, 0.1, 1000);
-        this.droneCamera.position.set(0, 0.3, -0.8); // Gerçekçi burun pozisyonu
+        this.droneCamera = new THREE.PerspectiveCamera(70, 4/3, 0.01, 1000);
+        // Kamera her zaman grubun ileri yönüne (-Z) bakmalı
+        this.droneCamera.position.set(0, 0.25, -1.5); 
         this.drone.add(this.droneCamera);
         
         this.droneTargetPos.copy(this.drone.position);
@@ -359,12 +418,15 @@ class TelloLandscape {
         const hSlider = document.getElementById('wall-height');
         const sizeSlider = document.getElementById('icon-size');
         
-        if (wSlider) wSlider.oninput = (e) => { this.designer.box.scale.x = e.target.value / 10; e.target.nextElementSibling.innerText = e.target.value + 'm'; };
-        if (hSlider) hSlider.oninput = (e) => { this.designer.box.scale.y = e.target.value / 4; e.target.nextElementSibling.innerText = e.target.value + 'm'; };
+        if (wSlider) wSlider.oninput = (e) => { this.designer.box.scale.x = e.target.value / 10; e.target.nextElementSibling.innerText = e.target.value + 'm'; this.updateDesignerPreview(); };
+        if (hSlider) hSlider.oninput = (e) => { this.designer.box.scale.y = e.target.value / 4; e.target.nextElementSibling.innerText = e.target.value + 'm'; this.updateDesignerPreview(); };
+        const eSlider = document.getElementById('wall-elevation');
+        if (eSlider) eSlider.oninput = (e) => { e.target.nextElementSibling.innerText = e.target.value + 'm'; this.updateDesignerPreview(); };
         if (sizeSlider) sizeSlider.oninput = (e) => { 
             const s = e.target.value;
             this.designer.icon.scale.set(s / 3, s / 3, 1);
             e.target.nextElementSibling.innerText = s + 'm';
+            this.updateDesignerPreview();
         };
     }
 
@@ -395,10 +457,14 @@ class TelloLandscape {
         const urlEl = document.getElementById('custom-icon-url');
         if (urlEl && urlEl.value !== '') { window.uploadedImageData = null; }
         
-        // Update Box Color anında etki etsin
+        // Update Box Color & Elevation anında etki etsin
         if (this.designer.box) {
+            const h = document.getElementById('wall-height')?.value || 4;
+            const elev = document.getElementById('wall-elevation')?.value || 0;
             this.designer.box.material.color.set(wallColor);
+            this.designer.box.position.y = parseFloat(elev) + parseFloat(h) / 2;
             this.designer.box.material.needsUpdate = true;
+            if (this.designer.icon) this.designer.icon.position.y = this.designer.box.position.y;
         }
 
         if (type === 'CUSTOM_WALL') {
@@ -441,13 +507,14 @@ class TelloLandscape {
     }
 
     confirmDesign() {
-        const w = document.getElementById('wall-width')?.value || 10;
-        const h = document.getElementById('wall-height')?.value || 4;
-        const type = document.getElementById('icon-type')?.value || 'UP';
-        const wallColor = document.getElementById('wall-color')?.value || '#444444';
-        const customUrlInput = document.getElementById('custom-icon-url')?.value;
+        const w = document.getElementById('wall-width').value;
+        const h = document.getElementById('wall-height').value;
+        const elev = document.getElementById('wall-elevation').value;
+        const type = document.getElementById('icon-type').value;
+        const wallColor = document.getElementById('wall-color').value;
+        const customUrlInput = document.getElementById('custom-icon-url').value;
         const customUrl = window.uploadedImageData || customUrlInput;
-        const iconSize = document.getElementById('icon-size')?.value || 3;
+        const iconSize = document.getElementById('icon-size').value;
         
         const group = new THREE.Group();
         const boxMat = new THREE.MeshStandardMaterial({ color: wallColor });
@@ -471,12 +538,13 @@ class TelloLandscape {
             group.add(icon);
         }
         
-        group.position.set(0, h/2, -20 * (this.targets.length + 1));
+        group.position.set(0, parseFloat(elev) + parseFloat(h)/2, -20 * (this.targets.length + 1));
         group.userData = {
             id: Date.now().toString(),
             type: type,
             w: parseFloat(w),
             h: parseFloat(h),
+            elevation: parseFloat(elev),
             wallColor: wallColor,
             customUrl: customUrl,
             iconSize: parseFloat(iconSize)
@@ -514,8 +582,14 @@ class TelloLandscape {
             this.raycaster.setFromCamera(this.mouse, this.camera);
             const intersects = this.raycaster.intersectObject(this.floor);
             if (intersects.length > 0) {
-                this.draggedObj.position.x = intersects[0].point.x;
-                this.draggedObj.position.z = intersects[0].point.z;
+                // ALT veya CTRL tuşu basılıysa YÜKSEKLİK ayarla, değilse YERDE hareket et
+                if (e.altKey || e.ctrlKey) {
+                    const deltaY = -e.movementY * 0.05;
+                    this.draggedObj.position.y = Math.max(0.5, this.draggedObj.position.y + deltaY);
+                } else {
+                    this.draggedObj.position.x = intersects[0].point.x;
+                    this.draggedObj.position.z = intersects[0].point.z;
+                }
                 this.updateWaypointPath(); // Sürüklerken yolu güncelle
             }
         };
@@ -781,6 +855,9 @@ class TelloLandscape {
             const dt = (now - (this.lastTime || now)) / 1000;
             this.lastTime = now;
 
+            // Animasyon Mixer'ı güncelle (Eğer GLB animasyonu varsa)
+            if (this.mixer) this.mixer.update(dt);
+
             // Hız Hesabı (SPD)
             const dist = this.drone.position.distanceTo(this.lastPos);
             const speed = dt > 0 ? (dist / dt).toFixed(1) : "0.0";
@@ -864,6 +941,28 @@ class TelloLandscape {
         if (this.designer.renderer) {
             this.designer.renderer.render(this.designer.scene, this.designer.camera);
         }
+    }
+
+    nextTip() {
+        this.currentTipPage = (this.currentTipPage + 1) % this.tips.length;
+        this.updateTip();
+    }
+
+    prevTip() {
+        this.currentTipPage = (this.currentTipPage - 1 + this.tips.length) % this.tips.length;
+        this.updateTip();
+    }
+
+    toggleTips() {
+        const panel = document.getElementById('tips-panel');
+        if (panel) panel.classList.toggle('hidden');
+    }
+
+    updateTip() {
+        const content = document.getElementById('tip-content');
+        const pageNum = document.getElementById('tip-page-num');
+        if (content) content.innerHTML = this.tips[this.currentTipPage];
+        if (pageNum) pageNum.innerText = `${this.currentTipPage + 1} / ${this.tips.length}`;
     }
 
     addLog(msg, type = 'ai') {
