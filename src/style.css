@@ -188,3 +188,12 @@ input[type="color"]::-webkit-color-swatch { border: none; border-radius: 6px; }
 #tip-content ul { list-style: none; margin-top: 8px; }
 #tip-content li { margin-bottom: 6px; padding-left: 12px; position: relative; }
 #tip-content li::before { content: '•'; position: absolute; left: 0; color: var(--accent); }
+
+/* AI VIEW (Python Screen) */
+#ai-view-container {
+    width: 100%; background: rgba(255,255,255,0.05); border: 1px solid var(--border-glass);
+    border-radius: 12px; overflow: hidden; margin-bottom: 20px;
+    display: flex; flex-direction: column;
+}
+.view-header { background: rgba(0,255,136,0.1); color: var(--accent); font-size: 0.6rem; font-weight: 800; padding: 6px 12px; border-bottom: 1px solid var(--border-glass); letter-spacing: 1px; }
+#ai-view-img { width: 100%; height: auto; display: block; background: #000; }

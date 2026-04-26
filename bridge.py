@@ -12,6 +12,7 @@ class BridgeState:
         self.latest_frame = None
         self.websocket = None
         self.lock = threading.Lock()
+        self.takeoff_received = False # JS'den T tuşu gelince True olur
 
 class Tello:
     def __init__(self):
@@ -97,6 +98,13 @@ class Tello:
         print("[BRIDGE] Geriye takla atılıyor!")
         self._send({"type": "flip", "dir": "back"})
         time.sleep(1.5)
+
+    def send_processed_frame(self, frame):
+        """AI tarafından işlenen kareyi Web sitesine gönderir."""
+        if self.state.websocket:
+            _, buffer = cv2.imencode('.jpg', frame, [int(cv2.IMWRITE_JPEG_QUALITY), 60])
+            b64_frame = base64.b64encode(buffer).decode('utf-8')
+            self._send({"type": "processed_frame", "data": "data:image/jpeg;base64," + b64_frame})
 
     def get_battery(self): return 90
     def get_height(self): return int(self.state.latest_alt * 100) if hasattr(self.state, 'latest_alt') else 0

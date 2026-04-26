@@ -37,6 +37,14 @@ class TelloLandscape {
             const key = e.key.toLowerCase();
             if (key === ' ') this.keys.space = true;
             else if (this.keys.hasOwnProperty(key)) this.keys[key] = true;
+            
+            // T Tuşu: Hem dronu kaldır hem Python'a "Başla" de
+            if (key === 't') {
+                if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+                    this.ws.send(JSON.stringify({ type: 'takeoff_command' }));
+                }
+                this.addLog("T Tuşu: Otonom sürüş başlatılıyor...", "system");
+            }
         });
         window.addEventListener('keyup', (e) => {
             const key = e.key.toLowerCase();
@@ -723,6 +731,14 @@ class TelloLandscape {
             this.drone.rotation.set(0, 0, 0); // Fix tilt
             this.addLog("Command: TAKEOFF", "system");
             this.droneTargetPos.set(this.drone.position.x, 5, this.drone.position.z);
+            return;
+        }
+
+        if (msg.type === 'processed_frame') {
+            const container = document.getElementById('ai-view-container');
+            const img = document.getElementById('ai-view-img');
+            if (container) container.classList.remove('hidden');
+            if (img) img.src = msg.data;
             return;
         }
 

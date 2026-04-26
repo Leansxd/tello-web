@@ -208,6 +208,15 @@ class TelloAutonomousApp:
 
     def logic_loop(self):
         while self.running:
+            if not self.is_flying:
+                # Web'den gelen T tuşunu bekle
+                if self.tello.state.takeoff_received:
+                    print("[AI] BAŞLAT Komutu Alındı, Kalkış Yapılıyor...")
+                    self.tello.takeoff()
+                    self.is_flying = True
+                    self.tello.state.takeoff_received = False
+                time.sleep(0.1); continue
+
             ai_res, fire_objs, ai_fps, ai_loaded = self.ai_worker.get_results()
             if not self.is_connected or not ai_loaded or self.frame_read is None:
                 time.sleep(0.1); continue
@@ -296,6 +305,9 @@ class TelloAutonomousApp:
             HUDSystem.draw_fighter_hud(frame, self.telemetry, ai_fps)
             cv2.imshow("Tello Otonom", frame)
             
+            # Kareyi Web Sitesine de Gönder
+            self.tello.send_processed_frame(frame)
+            
             key = cv2.waitKey(1) & 0xFF
             if key == ord('q'): self.running = False; break
             if key == ord('t') and self.is_connected: self.tello.takeoff(); self.is_flying = True
@@ -330,10 +342,9 @@ class TelloAutonomousApp:
                 self.tello.land()
                 self.running = False
             time.sleep(0.5); self.tello.send_rc_control(0,0,0,0)
-        
-        self.last_cmd_time = time.time()
-        self.bbox_history.clear()
-        self.is_busy = False
+            self.last_cmd_time = time.time()
+            self.bbox_history.clear()
+            self.is_busy = False
 
     def terminate(self):
         try:

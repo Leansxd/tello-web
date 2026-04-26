@@ -61,10 +61,15 @@
                     <option value="nature">T-03 Forest Green</option>
                 </select>
             </div>
-
+            
             <!-- LEFT PANEL (LOGS) -->
             <aside class="hud-left">
-                <div class="panel-header">TERMINAL</div>
+                <!-- AI ANALYSIS VIEW (Python Screen) -->
+                <div id="ai-view-container" class="hidden">
+                    <div class="view-header">AI ANALYSIS (CV)</div>
+                    <img id="ai-view-img" src="" alt="AI View">
+                </div>
+                <div class="panel-header">FLIGHT LOGS</div>
                 <div id="ai-logs" class="logs">
                     <div class="log-entry system">Tello OS initialized. Waiting for connection...</div>
                 </div>
